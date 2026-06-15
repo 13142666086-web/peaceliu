@@ -81,6 +81,12 @@ const zhuoruProject: Project = {
   summary: "围绕琢如护肤产品和品牌调性进行小红书图文选题、文案方向与视觉内容协同，形成可用于社媒发布的内容素材。",
 };
 
+function displayImageSrc(src?: string) {
+  if (!src) return "";
+  if (!src.startsWith("assets/projects/")) return src;
+  return src.replace(/^assets\/projects\//, "assets/thumbs/projects/").replace(/\.(png|jpe?g)$/i, ".jpg");
+}
+
 function enrichProjects(projects: Project[]) {
   const next = projects.map((project) => {
     if (project.title !== "医图生科") return project;
@@ -159,7 +165,7 @@ function pickProjects(projects: Project[], limit = 10) {
 
 function projectImages(project: Project, limit = 8) {
   if (project.title === "医图生科") {
-    return project.images.slice(0, limit).map((image) => image.src).filter(Boolean);
+    return project.images.slice(0, limit).map((image) => displayImageSrc(image.src)).filter(Boolean);
   }
   const seen = new Set<string>();
   const images = [project.cover, ...project.images.map((image) => image.src)].filter(Boolean) as string[];
@@ -167,7 +173,7 @@ function projectImages(project: Project, limit = 8) {
     if (seen.has(src)) return false;
     seen.add(src);
     return true;
-  }).slice(0, limit);
+  }).slice(0, limit).map(displayImageSrc);
 }
 
 function App() {
@@ -377,7 +383,10 @@ function HeroSection() {
 function MarqueeSection({ projects }: { projects: Project[] }) {
   const ref = useRef<HTMLElement>(null);
   const [offset, setOffset] = useState(0);
-  const images = projects.flatMap((project) => [project.cover, ...project.images.slice(0, 1).map((image) => image.src)]).filter(Boolean) as string[];
+  const images = projects
+    .map((project) => project.cover || project.images[0]?.src)
+    .filter(Boolean)
+    .map((src) => displayImageSrc(src as string));
   const rowOne = images.slice(0, Math.ceil(images.length / 2));
   const rowTwo = images.slice(Math.ceil(images.length / 2));
 
@@ -552,11 +561,11 @@ function ProjectCard({ project, index, onOpen }: { project: Project; index: numb
           <button className={`project-image-grid ${hasSideImages ? "" : "single-image"}`} type="button" onClick={() => onOpen(project)}>
             {hasSideImages && (
               <div>
-                <img src={images[1]} alt={`${project.title} 辅图`} />
-                {images[2] && <img src={images[2]} alt={`${project.title} 辅图`} />}
+                <img src={images[1]} alt={`${project.title} 辅图`} loading="lazy" decoding="async" />
+                {images[2] && <img src={images[2]} alt={`${project.title} 辅图`} loading="lazy" decoding="async" />}
               </div>
             )}
-            <img src={images[0]} alt={project.title} />
+            <img src={images[0]} alt={project.title} loading="lazy" decoding="async" />
           </button>
         </article>
       </BorderGlow>
